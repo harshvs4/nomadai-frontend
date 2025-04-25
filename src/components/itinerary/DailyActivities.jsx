@@ -3,7 +3,10 @@ import React from 'react';
 const DailyActivities = ({ dayPlan }) => {
   if (!dayPlan) return null;
 
+  // Parse the activities from the dayPlan text
   const parseActivities = (text) => {
+    if (!text) return { morning: [], afternoon: [], evening: [] };
+
     const activities = {
       morning: [],
       afternoon: [],
@@ -11,7 +14,7 @@ const DailyActivities = ({ dayPlan }) => {
     };
 
     let currentSection = null;
-    let currentActivity = null;
+    let currentActivity = {};
 
     const lines = text.split('\n').map(line => line.trim()).filter(line => line);
 
@@ -30,52 +33,36 @@ const DailyActivities = ({ dayPlan }) => {
 
       if (!currentSection) return;
 
-      // Start a new activity if it begins with a time or specific keywords
-      if (line.match(/^\d{2}:\d{2}/) || 
-          line.startsWith('Arrival') || 
-          line.startsWith('Transport') || 
-          line.startsWith('Check-in') ||
-          line.startsWith('Lunch:') ||
-          line.startsWith('Visit') ||
-          line.startsWith('Dinner:') ||
-          line.startsWith('Breakfast') ||
-          line.startsWith('Free Time:') ||
-          line.startsWith('Return') ||
-          line.startsWith('Flight')) {
-        
-        if (currentActivity) {
+      // Parse time and activity
+      if (line.match(/^\d{2}:\d{2}/)) {
+        if (Object.keys(currentActivity).length > 0) {
           activities[currentSection].push(currentActivity);
         }
-        
-        currentActivity = { description: line };
-        
-        // Extract time if present
-        const timeMatch = line.match(/^\d{2}:\d{2}/);
-        if (timeMatch) {
-          currentActivity.time = timeMatch[0];
-          currentActivity.description = line.substring(timeMatch[0].length).trim();
+        const [time, ...activityParts] = line.split(' ');
+        currentActivity = {
+          time,
+          activity: activityParts.join(' ')
+        };
+      }
+      // Parse transportation
+      else if (line.toLowerCase().startsWith('transportation:')) {
+        currentActivity.transportation = line.split(':')[1].trim();
+      }
+      // Parse cost
+      else if (line.toLowerCase().includes('cost:')) {
+        currentActivity.cost = line.trim();
+      }
+      // Parse additional details
+      else if (currentActivity.activity) {
+        if (!currentActivity.details) {
+          currentActivity.details = [];
         }
-        
-      } else if (line.toLowerCase().startsWith('transport:')) {
-        if (currentActivity) {
-          currentActivity.transport = line.substring('transport:'.length).trim();
-        }
-      } else if (line.toLowerCase().startsWith('duration:')) {
-        if (currentActivity) {
-          currentActivity.duration = line.substring('duration:'.length).trim();
-        }
-      } else if (line.includes('approx.') || line.includes('SGD')) {
-        if (currentActivity) {
-          currentActivity.cost = line.trim();
-        }
-      } else if (currentActivity) {
-        // Append to description for additional details
-        currentActivity.description += ' ' + line;
+        currentActivity.details.push(line);
       }
     });
 
     // Add the last activity
-    if (currentActivity && currentSection) {
+    if (Object.keys(currentActivity).length > 0 && currentSection) {
       activities[currentSection].push(currentActivity);
     }
 
@@ -85,8 +72,8 @@ const DailyActivities = ({ dayPlan }) => {
   const activities = parseActivities(dayPlan);
 
   const TimeBlock = ({ title, activities, icon }) => (
-    <div className="mb-8">
-      <div className="flex items-center mb-4">
+    <div className="mb-6">
+      <div className="flex items-center mb-3">
         <div className={`rounded-full p-2 mr-3 ${icon.bgColor}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${icon.textColor}`} viewBox="0 0 20 20" fill="currentColor">
             {icon.path}
@@ -96,30 +83,30 @@ const DailyActivities = ({ dayPlan }) => {
       </div>
       <div className="pl-10 space-y-4">
         {activities.map((item, index) => (
-          <div key={index} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div key={index} className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
             <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="font-medium text-gray-800">
-                  {item.time && <span className="text-blue-600 mr-2">{item.time}</span>}
-                  {item.description}
-                </div>
-                {item.transport && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">Transport:</span> {item.transport}
-                  </div>
-                )}
-                {item.duration && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">Duration:</span> {item.duration}
-                  </div>
-                )}
-                {item.cost && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">Cost:</span> {item.cost}
-                  </div>
-                )}
+              <div className="font-medium text-gray-800">
+                {item.time && <span className="text-blue-600 mr-2">{item.time}</span>}
+                {item.activity}
               </div>
             </div>
+            {item.transportation && (
+              <div className="text-sm text-gray-600 mt-2">
+                <span className="font-medium">Transportation:</span> {item.transportation}
+              </div>
+            )}
+            {item.cost && (
+              <div className="text-sm text-gray-600 mt-1">
+                <span className="font-medium">Cost:</span> {item.cost}
+              </div>
+            )}
+            {item.details && item.details.length > 0 && (
+              <div className="text-sm text-gray-600 mt-2">
+                {item.details.map((detail, i) => (
+                  <div key={i}>{detail}</div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -128,11 +115,11 @@ const DailyActivities = ({ dayPlan }) => {
 
   return (
     <div className="bg-gray-50 rounded-lg p-6">
-      {/* Day Title */}
-      {dayPlan.split('\n')[0] && (
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">
-          {dayPlan.split('\n')[0]}
-        </h2>
+      {/* Date display */}
+      {dayPlan.includes('Date:') && (
+        <div className="mb-6 text-lg font-semibold text-gray-800">
+          {dayPlan.split('\n').find(line => line.includes('Date:')).trim()}
+        </div>
       )}
 
       {/* Morning Activities */}
