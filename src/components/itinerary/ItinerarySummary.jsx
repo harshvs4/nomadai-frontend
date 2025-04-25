@@ -45,55 +45,58 @@ const ItinerarySummary = ({ itinerary }) => {
 
   return (
     <div className="space-y-6">
-      {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900">
-        Travel Itinerary: {itinerary.source || 'Singapore'} to {itinerary.destination || 'Dubai'} ({formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)})
-      </h1>
-
-      {/* Budget Card */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">Budget</h2>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Total Budget:</span>
-            <span className="font-medium">{formatCurrency(totalBudget)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Estimated Cost:</span>
-            <span className="font-medium">{formatCurrency(estimatedCost)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Budget Utilization:</span>
-            <span className="font-medium">{budgetUtilization.toFixed(1)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full ${budgetUtilization > 100 ? 'bg-red-500' : 'bg-blue-500'}`}
-              style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
-            ></div>
-          </div>
-          {budgetUtilization > 100 ? (
-            <p className="text-red-500 text-sm">Budget exceeded.</p>
-          ) : budgetUtilization === 100 ? (
-            <p className="text-blue-500 text-sm">Budget fully utilized.</p>
-          ) : (
-            <p className="text-green-500 text-sm">
-              Remaining: {formatCurrency(totalBudget - estimatedCost)}
-            </p>
-          )}
+      {/* Blue Header Card */}
+      <div className="bg-blue-600 rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 text-white">
+          <h1 className="text-2xl font-bold">
+            {calculatedDuration}-Day Trip to {itinerary.destination || 'Dubai'}
+          </h1>
+          <p className="mt-1 text-blue-100">
+            {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
+          </p>
         </div>
       </div>
 
-      {/* Introduction */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-3">Introduction</h2>
-        <p className="text-gray-600">
-          {itinerary.summary || `Embark on an exciting ${calculatedDuration}-day adventure in ${itinerary.destination || 'Dubai'}, a city known for its modern architecture, luxury shopping, and vibrant nightlife. This itinerary offers a blend of cultural experiences, culinary delights, and thrilling attractions, all while keeping within your budget of ${formatCurrency(totalBudget)}.`}
+      {/* Trip Overview Card */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-4">Trip Overview</h2>
+        <p className="text-gray-600 mb-6">
+          {itinerary.summary || `${itinerary.source || 'Singapore'} to ${itinerary.destination || 'Dubai'} (${formatDate(itinerary.startDate)} - ${formatDate(itinerary.endDate)})`}
         </p>
+
+        {/* Budget Section */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Budget</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Total Budget:</span>
+              <span className="font-medium">{formatCurrency(totalBudget)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Estimated Cost:</span>
+              <span className="font-medium">{formatCurrency(estimatedCost)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Budget Utilization:</span>
+              <span className="font-medium">{budgetUtilization.toFixed(0)}%</span>
+            </div>
+            <div className="mt-2">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full ${budgetUtilization > 100 ? 'bg-red-500' : 'bg-blue-500'}`}
+                  style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
+                ></div>
+              </div>
+              {budgetUtilization >= 100 && (
+                <p className="text-red-500 text-sm mt-1">Budget fully utilized.</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Flight Details */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-3">Flight Details</h2>
         <ul className="space-y-2 text-gray-600">
           <li><span className="font-medium">Airline:</span> {itinerary.selectedFlight?.airline || 'Not selected'}</li>
@@ -105,7 +108,7 @@ const ItinerarySummary = ({ itinerary }) => {
       </div>
 
       {/* Hotel Recommendation */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-3">Hotel Recommendation</h2>
         <ul className="space-y-2 text-gray-600">
           <li><span className="font-medium">Hotel Name:</span> {itinerary.selectedHotel?.name || 'Not selected'}</li>
