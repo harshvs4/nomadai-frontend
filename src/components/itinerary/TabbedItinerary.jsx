@@ -11,8 +11,8 @@ const parseDayPlans = (rawText) => {
   const dayRegex = /Day (\d+): ([^\n]+)/;
   const dateRegex = /\((.*?)\)/;
 
-  // Split the text into day sections
-  const dayTexts = rawText.split(/Day \d+:/).filter(text => text.trim());
+  // Split the text into day sections and skip the first element (header)
+  const dayTexts = rawText.split(/Day \d+:/).filter(text => text.trim()).slice(1);
   
   dayTexts.forEach((dayText, index) => {
     const dayNumber = index + 1;
