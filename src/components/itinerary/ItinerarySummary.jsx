@@ -45,11 +45,66 @@ const ItinerarySummary = ({ itinerary }) => {
 
   return (
     <>
-      {/* Main Title Section */}
+      {/* Top Budget Card */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-700 px-6 py-4">
+          <h1 className="text-white text-2xl font-bold">
+            {calculatedDuration}-Day Trip to {itinerary.destination || 'Unknown Destination'}
+          </h1>
+          {itinerary.startDate && itinerary.endDate && (
+            <p className="text-blue-100 mt-1">
+              {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
+            </p>
+          )}
+        </div>
+        <div className="p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Trip Overview</h2>
+            <p className="text-gray-600">{itinerary.summary}</p>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Budget</h2>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Total Budget:</span>
+                <span className="font-medium">{formatCurrency(totalBudget)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Estimated Cost:</span>
+                <span className="font-medium">{formatCurrency(estimatedCost)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Budget Utilization:</span>
+                <span className="font-medium">{budgetUtilization.toFixed(1)}%</span>
+              </div>
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className={`h-2.5 rounded-full ${budgetUtilization > 100 ? 'bg-red-500' : 'bg-blue-500'}`}
+                    style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+              {budgetUtilization > 100 ? (
+                <p className="text-red-500 text-sm mt-1">Budget exceeded.</p>
+              ) : budgetUtilization === 100 ? (
+                <p className="text-blue-500 text-sm mt-1">Budget fully utilized.</p>
+              ) : (
+                <p className="text-green-500 text-sm mt-1">
+                  Remaining: {formatCurrency(totalBudget - estimatedCost)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Sections */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
           Trip Itinerary: {itinerary.source || 'Singapore'} to {itinerary.destination || 'Unknown'} ({formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)})
         </h1>
+        
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-3">Overview</h2>
           <p className="text-gray-600 text-lg">
@@ -79,46 +134,6 @@ const ItinerarySummary = ({ itinerary }) => {
             <li><span className="font-medium">Amenities:</span> {itinerary.selectedHotel?.amenities?.join(', ') || 'Not specified'}</li>
             <li><span className="font-medium">Address:</span> {itinerary.selectedHotel?.address || 'Not specified'}</li>
           </ul>
-        </div>
-      </div>
-
-      {/* Budget Section */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-        <div className="p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Budget</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Total Budget:</span>
-              <span className="font-semibold text-lg">{formatCurrency(totalBudget)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Estimated Cost:</span>
-              <span className="font-semibold text-lg">{formatCurrency(estimatedCost)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Budget Utilization:</span>
-              <span className="font-semibold text-lg">{budgetUtilization.toFixed(1)}%</span>
-            </div>
-            
-            {/* Budget Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className={`h-2.5 rounded-full ${budgetUtilization > 100 ? 'bg-red-500' : 'bg-blue-500'}`}
-                style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
-              ></div>
-            </div>
-            
-            {/* Budget Status Message */}
-            {budgetUtilization > 100 ? (
-              <p className="text-red-500 text-sm">Budget exceeded.</p>
-            ) : budgetUtilization === 100 ? (
-              <p className="text-blue-500 text-sm">Budget fully utilized.</p>
-            ) : (
-              <p className="text-green-500 text-sm">
-                Remaining: {formatCurrency(totalBudget - estimatedCost)}
-              </p>
-            )}
-          </div>
         </div>
       </div>
     </>
