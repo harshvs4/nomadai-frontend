@@ -1,8 +1,103 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import FlightCard from './FlightCard';
 import HotelCard from './HotelCard';
 import DailyActivities from './DailyActivities';
 import PointOfInterestCard from './PointOfInterestCard';
+
+const parseDayPlans = (rawText) => {
+  if (!rawText) return [];
+
+  const dayPlans = [];
+  const dayRegex = /Day (\d+): ([^\n]+)\(([^\n]+)\)/;
+  const timeRegex = /(\d{2}:\d{2} [AP]M)/;
+  const costRegex = /\(([^)]*SGD[^)]*)\)/;
+
+  // Split the text into day sections
+  const dayTexts = rawText.split(/Day \d+:/).filter(text => text.trim());
+  
+  dayTexts.forEach((dayText, index) => {
+    const dayNumber = index + 1;
+    const lines = dayText.split('\n').map(line => line.trim()).filter(Boolean);
+    
+    // Extract day title and date
+    const titleLine = lines[0];
+    const dateMatch = titleLine.match(/\((.*?)\)/);
+    const title = titleLine.replace(/\(.*?\)/, '').trim();
+    const date = dateMatch ? dateMatch[1].trim() : '';
+
+    const dayPlan = {
+      day: dayNumber,
+      date,
+      title,
+      morning: [],
+      afternoon: [],
+      evening: []
+    };
+
+    let currentSection = null;
+    let currentActivity = null;
+
+    lines.forEach(line => {
+      // Detect section
+      if (line.toLowerCase().includes('morning:')) {
+        currentSection = 'morning';
+        return;
+      } else if (line.toLowerCase().includes('afternoon:')) {
+        currentSection = 'afternoon';
+        return;
+      } else if (line.toLowerCase().includes('evening:')) {
+        currentSection = 'evening';
+        return;
+      }
+
+      if (!currentSection || line.includes(':') && (line.toLowerCase().includes('morning:') || 
+          line.toLowerCase().includes('afternoon:') || line.toLowerCase().includes('evening:'))) {
+        return;
+      }
+
+      // Extract activity details
+      const timeMatch = line.match(timeRegex);
+      const costMatch = line.match(costRegex);
+      
+      if (timeMatch || line.includes('Activity:') || line.includes('Lunch:') || 
+          line.includes('Dinner:') || line.includes('Breakfast:') || 
+          line.startsWith('Visit') || line.startsWith('Transfer') || 
+          line.startsWith('Check')) {
+        
+        // Save previous activity if exists
+        if (currentActivity) {
+          dayPlan[currentSection].push(currentActivity);
+        }
+
+        // Create new activity
+        currentActivity = {
+          time: timeMatch ? timeMatch[1] : '',
+          activity: line.replace(timeRegex, '').replace(costRegex, '').trim(),
+          details: [],
+          cost: costMatch ? costMatch[1].trim() : ''
+        };
+      } else if (currentActivity) {
+        // If line contains cost information
+        if (line.toLowerCase().includes('cost:') || line.toLowerCase().includes('approx.') || 
+            line.toLowerCase().includes('sgd')) {
+          currentActivity.cost = line.trim();
+        } else {
+          // Add as detail
+          currentActivity.details.push(line);
+        }
+      }
+    });
+
+    // Add the last activity
+    if (currentActivity) {
+      dayPlan[currentSection].push(currentActivity);
+    }
+
+    dayPlans.push(dayPlan);
+  });
+
+  return dayPlans;
+};
 
 const TabbedItinerary = ({
   itinerary,
@@ -19,147 +114,10 @@ const TabbedItinerary = ({
   const [activeTab, setActiveTab] = useState('overview');
   const [activeDay, setActiveDay] = useState(1);
 
-  // Structured data for the day-by-day breakdown
-  const dayPlans = [
-    {
-      day: 1,
-      date: "April 26, 2025",
-      title: "Arrival in Dubai",
-      morning: [
-        {
-          time: "12:10 PM",
-          activity: "Arrive in Dubai",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Transfer to the hotel via taxi",
-          cost: "approx. SGD 20",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Check-in at Crowne Plaza Dubai Deira",
-          details: []
-        }
-      ],
-      afternoon: [
-        {
-          time: "",
-          activity: "Lunch at GIA",
-          cost: "approx. SGD 30",
-          details: ["Italian cuisine"]
-        },
-        {
-          time: "",
-          activity: "Visit the Museum of The Future",
-          cost: "Entry Fee: approx. SGD 20",
-          details: ["Explore the innovative exhibits until 5:00 PM"]
-        }
-      ],
-      evening: [
-        {
-          time: "",
-          activity: "Visit ARTE Museum Dubai at Dubai Mall",
-          cost: "Entry Fee: approx. SGD 15",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Dinner at Trésind Dubai",
-          cost: "approx. SGD 60",
-          details: ["Upscale Indian meal"]
-        },
-        {
-          time: "",
-          activity: "Return to the hotel for rest",
-          details: []
-        }
-      ]
-    },
-    {
-      day: 2,
-      date: "April 27, 2025",
-      title: "Full Day in Dubai",
-      morning: [
-        {
-          time: "",
-          activity: "Breakfast at the hotel",
-          cost: "included",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Visit Illusion City Dubai - Illusion Museum",
-          cost: "Entry Fee: approx. SGD 15",
-          details: []
-        }
-      ],
-      afternoon: [
-        {
-          time: "",
-          activity: "Lunch at a local café",
-          cost: "approx. SGD 25",
-          details: []
-        },
-        {
-          time: "",
-          activity: "IMG Worlds of Adventure",
-          cost: "Entry Fee: approx. SGD 70",
-          details: ["Enjoy the rides and attractions until 6:00 PM"]
-        }
-      ],
-      evening: [
-        {
-          time: "",
-          activity: "Dinner at CÉ LA VI",
-          cost: "approx. SGD 80",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Explore Dubai Marina",
-          details: ["Relaxing stroll"]
-        },
-        {
-          time: "",
-          activity: "Return to the hotel for the night",
-          details: []
-        }
-      ]
-    },
-    {
-      day: 3,
-      date: "April 28, 2025",
-      title: "Departure",
-      morning: [
-        {
-          time: "",
-          activity: "Breakfast at the hotel",
-          cost: "included",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Check-out from the hotel",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Transfer to the airport via taxi",
-          cost: "approx. SGD 20",
-          details: []
-        },
-        {
-          time: "",
-          activity: "Depart from Dubai back to Singapore",
-          details: []
-        }
-      ],
-      afternoon: [],
-      evening: []
-    }
-  ];
+  // Parse the day plans from the LLM response
+  const dayPlans = useMemo(() => {
+    return parseDayPlans(itinerary?.raw_text);
+  }, [itinerary?.raw_text]);
 
   const tabs = [
     { id: 'overview', label: 'Travel & Stay' },
