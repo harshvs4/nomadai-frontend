@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTravelContext } from '../context/TravelContext';
 import ItinerarySummary from '../components/itinerary/ItinerarySummary';
+import ItineraryMarkdown from '../components/itinerary/ItineraryMarkdown';
 import DailyPlan from '../components/itinerary/DailyPlan';
 import FlightCard from '../components/itinerary/FlightCard';
 import HotelCard from '../components/itinerary/HotelCard';
@@ -290,14 +290,9 @@ const ItineraryPage = () => {
           />
         )}
 
-        {/* ─── FULL LLM‐GENERATED ITINERARY ───────────────────────── */}
+        {/* Full Itinerary Details */}
         {itinerary.raw_text && (
-          <>
-            {console.log('Raw Text Content:', itinerary.raw_text)}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8 prose max-w-none">
-              <ReactMarkdown>{itinerary.raw_text}</ReactMarkdown>
-            </div>
-          </>
+          <ItineraryMarkdown content={itinerary.raw_text} />
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
