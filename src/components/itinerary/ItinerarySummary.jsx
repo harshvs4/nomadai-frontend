@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 
-
 const ItinerarySummary = ({ itinerary }) => {
-  const [calculatedDuration, setCalculatedDuration] = useState(itinerary.duration);
+  // Return early if no itinerary is provided
+  if (!itinerary) {
+    return null;
+  }
+
+  const [calculatedDuration, setCalculatedDuration] = useState(0);
 
   // Calculate duration based on start and end dates
   useEffect(() => {
@@ -42,19 +46,24 @@ const ItinerarySummary = ({ itinerary }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
       <div className="bg-gradient-to-r from-blue-500 to-blue-700 px-6 py-4">
-        <h1 className="text-white text-2xl font-bold">{calculatedDuration}-Day Trip to {itinerary.destination}</h1>
-        <p className="text-blue-100 mt-1">
-          {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
-        </p>
+        <h1 className="text-white text-2xl font-bold">
+          {calculatedDuration}-Day Trip to {itinerary.destination || 'Unknown Destination'}
+        </h1>
+        {itinerary.startDate && itinerary.endDate && (
+          <p className="text-blue-100 mt-1">
+            {formatDate(itinerary.startDate)} - {formatDate(itinerary.endDate)}
+          </p>
+        )}
       </div>
 
-      
       <div className="p-6">
         {/* Summary */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Trip Overview</h2>
-          <p className="text-gray-600">{itinerary.summary}</p>
-        </div>
+        {itinerary.summary && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Trip Overview</h2>
+            <p className="text-gray-600">{itinerary.summary}</p>
+          </div>
+        )}
         
         {/* Budget Information */}
         <div className="mb-4">
