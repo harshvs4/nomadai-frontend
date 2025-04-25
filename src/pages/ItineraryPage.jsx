@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTravelContext } from '../context/TravelContext';
 import ItinerarySummary from '../components/itinerary/ItinerarySummary';
@@ -42,6 +43,7 @@ const ItineraryPage = () => {
           setError(null);
           // Fetch the itinerary from the backend
           const response = await llmService.getItinerary(id);
+          console.log(response);
           setItinerary(response);
         } catch (error) {
           console.error('Error fetching itinerary:', error);
@@ -87,7 +89,7 @@ const ItineraryPage = () => {
         const updatedItinerary = await llmService.updateItinerary(itinerary.request_id, {
           selected_flight: flight
         });
-        
+        console.log(updatedItinerary);
         setItinerary(updatedItinerary);
       }
       
@@ -110,7 +112,7 @@ const ItineraryPage = () => {
         const updatedItinerary = await llmService.updateItinerary(itinerary.request_id, {
           selected_hotel: hotel
         });
-        
+        console.log(updatedItinerary);
         setItinerary(updatedItinerary);
       }
       
@@ -285,6 +287,16 @@ const ItineraryPage = () => {
             totalCost={itinerary.total_cost || 0}
             summary={itinerary.summary || `Your trip to ${itinerary.travel_request.destination}`}
           />
+        )}
+
+        {/* ─── FULL LLM‐GENERATED ITINERARY ───────────────────────── */}
+        {itinerary.raw_text && (
+          <>
+            {console.log('Raw Text Content:', itinerary.raw_text)}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8 prose max-w-none">
+              <ReactMarkdown>{itinerary.raw_text}</ReactMarkdown>
+            </div>
+          </>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
