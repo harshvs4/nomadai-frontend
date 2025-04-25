@@ -209,6 +209,91 @@ const ItineraryPage = () => {
     }
   };
   
+  const extractCostFromResponse = (response) => {
+    if (!response || !response.raw_text) {
+      console.log('No response or raw_text available');
+      return 0;
+    }
+    
+    console.log('Raw text from response:', response.raw_text);
+    
+    // Try to find the cost in the Cost Summary section
+    const totalCostMatch = response.raw_text.match(/\*\*Estimated Total Trip Cost:\*\* SGD ([\d,]+\.?\d*)/);
+    if (totalCostMatch) {
+      const cost = parseFloat(totalCostMatch[1].replace(/,/g, ''));
+      console.log('Extracted total cost:', cost);
+      return cost;
+    }
+    
+    // If not found in the expected format, try to find it in the cost breakdown
+    const costSection = response.raw_text.match(/## Cost Summary(.*?)(?=##|$)/s);
+    if (costSection) {
+      const flightMatch = costSection[1].match(/\*\*Round-Trip Flight:\*\* SGD ([\d,]+\.?\d*)/);
+      const hotelMatch = costSection[1].match(/\*\*Hotel.*?:\*\* SGD ([\d,]+\.?\d*)/);
+      const dailyExpensesMatch = costSection[1].match(/\*Subtotal Daily Expenses:\* SGD ([\d,]+\.?\d*)/);
+      
+      if (flightMatch && hotelMatch && dailyExpensesMatch) {
+        const flight = parseFloat(flightMatch[1].replace(/,/g, ''));
+        const hotel = parseFloat(hotelMatch[1].replace(/,/g, ''));
+        const daily = parseFloat(dailyExpensesMatch[1].replace(/,/g, ''));
+        const total = flight + hotel + daily;
+        console.log('Calculated total from breakdown:', total);
+        return total;
+      }
+    }
+    
+    console.log('No cost found in response');
+    return 0;
+  };
+
+  const extractSummaryFromResponse = (response) => {
+    if (!response || !response.raw_text) {
+      console.log('No response or raw_text available for summary');
+      return '';
+    }
+    
+    console.log('Looking for summary in:', response.raw_text);
+    
+    // First try to find the summary in the Trip Overview section
+    const summaryMatch = response.raw_text.match(/\*\*Summary:\*\* (.*?)(?=\n|$)/);
+    if (summaryMatch) {
+      console.log('Found summary:', summaryMatch[1].trim());
+      return summaryMatch[1].trim();
+    }
+    
+    // If not found, try to find any description about the trip
+    const descriptionMatch = response.raw_text.match(/This trip to Dubai.*?(?=\n|$)/);
+    if (descriptionMatch) {
+      console.log('Found trip description:', descriptionMatch[0]);
+      return descriptionMatch[0];
+    }
+    
+    console.log('No summary found in response');
+    return '';
+  };
+
+  const extractTripDuration = (response) => {
+    if (!response || !response.raw_text) return '';
+    
+    // Try to find duration in the title
+    const durationMatch = response.raw_text.match(/# (\d+)-Day Trip to/);
+    if (durationMatch) {
+      return `${durationMatch[1]}-Day Trip to`;
+    }
+    return '';
+  };
+
+  const extractTripDates = (response) => {
+    if (!response || !response.raw_text) return '';
+    
+    // Try to find dates in the Trip Overview section
+    const datesMatch = response.raw_text.match(/\*\*Dates:\*\* (.*?)(?=\n|$)/);
+    if (datesMatch) {
+      return datesMatch[1].trim();
+    }
+    return '';
+  };
+  
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -278,12 +363,13 @@ const ItineraryPage = () => {
         {itinerary.travel_request && (
           <ItinerarySummary 
             destination={itinerary.travel_request.destination}
-            duration={itinerary.travel_request.duration}
+            duration={extractTripDuration(itinerary)}
+            tripDates={extractTripDates(itinerary)}
             startDate={itinerary.travel_request.depart_date}
             endDate={itinerary.travel_request.return_date}
-            budget={itinerary.travel_request.budget}
-            totalCost={itinerary.total_cost || 0}
-            summary={itinerary.summary || `Your trip to ${itinerary.travel_request.destination}`}
+            budget={itinerary.travel_request.budget || 5000}
+            totalCost={extractCostFromResponse(itinerary)}
+            summary={extractSummaryFromResponse(itinerary)}
           />
         )}
 
