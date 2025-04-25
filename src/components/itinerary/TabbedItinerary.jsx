@@ -19,6 +19,34 @@ const TabbedItinerary = ({
   const [activeTab, setActiveTab] = useState('overview');
   const [activeDay, setActiveDay] = useState(1);
 
+  // Extract day plans from the raw text
+  const extractDayPlans = (rawText) => {
+    if (!rawText) return [];
+    
+    const dayPlans = [];
+    let currentDayPlan = '';
+    const lines = rawText.split('\n');
+    
+    lines.forEach((line) => {
+      if (line.startsWith('Day ') && line.includes(':')) {
+        if (currentDayPlan) {
+          dayPlans.push(currentDayPlan.trim());
+        }
+        currentDayPlan = line + '\n';
+      } else if (currentDayPlan) {
+        currentDayPlan += line + '\n';
+      }
+    });
+    
+    if (currentDayPlan) {
+      dayPlans.push(currentDayPlan.trim());
+    }
+    
+    return dayPlans;
+  };
+
+  const dayPlans = extractDayPlans(itinerary.raw_text);
+
   const tabs = [
     { id: 'overview', label: 'Travel & Stay' },
     { id: 'daily', label: 'Daily Activities' },
@@ -95,7 +123,7 @@ const TabbedItinerary = ({
             {/* Day Selection */}
             <div className="mb-6 overflow-x-auto">
               <div className="flex space-x-2">
-                {itinerary.daily_plan?.map((day, index) => (
+                {dayPlans.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveDay(index + 1)}
@@ -114,8 +142,8 @@ const TabbedItinerary = ({
             </div>
 
             {/* Daily Plan Content */}
-            {itinerary.daily_plan?.[activeDay - 1] ? (
-              <DailyActivities dayPlan={itinerary.daily_plan[activeDay - 1]} />
+            {dayPlans[activeDay - 1] ? (
+              <DailyActivities dayPlan={dayPlans[activeDay - 1]} />
             ) : (
               <div className="text-center text-gray-600">
                 No activities planned for this day.
