@@ -4,25 +4,38 @@ import HotelCard from './HotelCard';
 import DailyActivities from './DailyActivities';
 import PointOfInterestCard from './PointOfInterestCard';
 
+const cleanMarkdownText = (text) => {
+  if (!text) return text;
+  return text.replace(/\*\*/g, '').replace(/^\s*-\s*/, '');
+};
+
 const parseDayPlans = (rawText) => {
   if (!rawText) return [];
 
   const dayPlans = [];
-  const dayRegex = /Day (\d+): ([^\n]+)/;
-  const dateRegex = /\((.*?)\)/;
 
-  // Split the text into day sections and skip the first element (header)
-  const dayTexts = rawText.split(/Day \d+:/).filter(text => text.trim()).slice(1);
+  // Find the Day-by-Day Plan section
+  const dayByDayMatch = rawText.match(/# Detailed Day-by-Day Plan\n\n([\s\S]*?)(?=\n# Cost Summary|$)/);
+  if (!dayByDayMatch) return [];
+
+  const dayByDaySection = dayByDayMatch[1];
   
-  dayTexts.forEach((dayText, index) => {
-    const dayNumber = index + 1;
-    const lines = dayText.split('\n').map(line => line.trim()).filter(Boolean);
+  // Split into individual days using the Day X pattern
+  const days = dayByDaySection.split(/(?=\*\*Day \d+:)/);
+  
+  // Skip the first element if it's empty
+  const startIndex = days[0].trim() === '' ? 1 : 0;
+  
+  for (let i = startIndex; i < days.length; i++) {
+    const dayText = days[i].trim();
     
     // Extract day title and date
-    const titleLine = lines[0];
-    const dateMatch = titleLine.match(dateRegex);
-    const title = titleLine.replace(dateRegex, '').trim();
-    const date = dateMatch ? dateMatch[1].trim() : '';
+    const titleMatch = dayText.match(/\*\*Day (\d+): (.*?) - (.*?)\*\*/);
+    if (!titleMatch) continue;
+
+    const dayNumber = parseInt(titleMatch[1]);
+    const date = titleMatch[2];
+    const title = titleMatch[3];
 
     const dayPlan = {
       day: dayNumber,
@@ -36,85 +49,78 @@ const parseDayPlans = (rawText) => {
     let currentSection = null;
     let currentActivity = null;
 
-    // Process remaining lines
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Detect section headers
-      if (line.toLowerCase().includes('morning')) {
+    // Split into lines and process each
+    const lines = dayText.split('\n').map(line => line.trim()).filter(Boolean);
+    
+    for (let j = 1; j < lines.length; j++) {  // Start from 1 to skip the title line
+      const line = lines[j];
+      
+      // Check for section headers
+      if (line.match(/\*\*Morning:\*\*/i)) {
         currentSection = 'morning';
         continue;
-      } else if (line.toLowerCase().includes('afternoon')) {
+      } else if (line.match(/\*\*Afternoon:\*\*/i)) {
         currentSection = 'afternoon';
         continue;
-      } else if (line.toLowerCase().includes('evening')) {
+      } else if (line.match(/\*\*Evening:\*\*/i)) {
         currentSection = 'evening';
         continue;
       }
 
       if (!currentSection) continue;
 
-      // Handle activity lines
-      if (line.startsWith('-')) {
-        // If we have a previous activity, save it
-        if (currentActivity) {
+      // Process activity lines (starting with *)
+      if (line.startsWith('*')) {
+        // Remove asterisks and clean up the line
+        let cleanLine = line.replace(/^\* /, '').replace(/\*\*/g, '').trim();
+        
+        // Initialize new activity
+        currentActivity = {
+          activity: cleanLine,
+          type: null,
+          cost: null,
+          description: null
+        };
+
+        // Extract cost if present
+        const costMatch = cleanLine.match(/- Approx\. Cost: SGD (\d+(\.\d{2})?)/);
+        if (costMatch) {
+          currentActivity.cost = `SGD ${costMatch[1]}`;
+          cleanLine = cleanLine.replace(/- Approx\. Cost: SGD \d+(\.\d{2})?/, '').trim();
+        }
+
+        // Determine activity type based on content
+        if (cleanLine.toLowerCase().includes('breakfast')) {
+          currentActivity.type = 'Breakfast';
+        } else if (cleanLine.toLowerCase().includes('lunch')) {
+          currentActivity.type = 'Lunch';
+        } else if (cleanLine.toLowerCase().includes('dinner')) {
+          currentActivity.type = 'Dinner';
+        } else if (cleanLine.toLowerCase().includes('travel') || cleanLine.toLowerCase().includes('taxi')) {
+          currentActivity.type = 'Travel';
+        } else if (cleanLine.toLowerCase().includes('visit') || cleanLine.toLowerCase().includes('explore')) {
+          currentActivity.type = 'Visit';
+        } else {
+          currentActivity.type = 'Activity';
+        }
+
+        // Update the activity text
+        currentActivity.activity = cleanLine;
+
+        // Add to the current section
+        if (currentSection && currentActivity.activity) {
           dayPlan[currentSection].push(currentActivity);
         }
-
-        // Start new activity
-        const activityText = line.substring(1).trim();
-        
-        // Check if it starts with a type marker
-        if (activityText.startsWith('**')) {
-          const typeMatch = activityText.match(/^\*\*(.*?):\*\*(.*)/);
-          if (typeMatch) {
-            currentActivity = {
-              type: typeMatch[1],
-              activity: typeMatch[2].trim(),
-              details: []
-            };
-          }
-        } else {
-          currentActivity = {
-            activity: activityText,
-            details: []
-          };
-        }
-      }
-      // Handle cost lines
-      else if (line.toLowerCase().startsWith('cost:')) {
+      } else if (line.startsWith('Description:')) {
+        // Add description to the current activity
         if (currentActivity) {
-          currentActivity.cost = line.substring(5).trim();
+          currentActivity.description = line.replace('Description:', '').trim();
         }
       }
-      // Handle other metadata lines
-      else if (line.startsWith('**')) {
-        const metadataMatch = line.match(/^\*\*(.*?):\*\*(.*)/);
-        if (metadataMatch && currentActivity) {
-          const [, type, value] = metadataMatch;
-          const key = type.toLowerCase().replace(/\s+/g, '');
-          if (key === 'address') {
-            currentActivity.address = value.trim();
-          } else if (key === 'description') {
-            currentActivity.description = value.trim();
-          } else if (key === 'entryfee') {
-            currentActivity.entryFee = value.trim();
-          }
-        }
-      }
-      // Handle additional details
-      else if (currentActivity && line.trim()) {
-        currentActivity.details.push(line.trim());
-      }
-    }
-
-    // Add the last activity if exists
-    if (currentActivity) {
-      dayPlan[currentSection].push(currentActivity);
     }
 
     dayPlans.push(dayPlan);
-  });
+  }
 
   return dayPlans;
 };
