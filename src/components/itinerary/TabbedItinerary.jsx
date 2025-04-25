@@ -36,67 +36,79 @@ const parseDayPlans = (rawText) => {
     let currentSection = null;
     let currentActivity = null;
 
-    lines.forEach(line => {
-      // Detect section
-      if (line.toLowerCase().includes('morning:')) {
+    // Process remaining lines
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Detect section headers
+      if (line.toLowerCase().includes('morning')) {
         currentSection = 'morning';
-        return;
-      } else if (line.toLowerCase().includes('afternoon:')) {
+        continue;
+      } else if (line.toLowerCase().includes('afternoon')) {
         currentSection = 'afternoon';
-        return;
-      } else if (line.toLowerCase().includes('evening:')) {
+        continue;
+      } else if (line.toLowerCase().includes('evening')) {
         currentSection = 'evening';
-        return;
+        continue;
       }
 
-      if (!currentSection) return;
+      if (!currentSection) continue;
 
-      // Check for activity markers
-      if (line.match(/^\*\*(.*?):\*\*/)) {
-        // Save previous activity if exists
+      // Handle activity lines
+      if (line.startsWith('-')) {
+        // If we have a previous activity, save it
         if (currentActivity) {
           dayPlan[currentSection].push(currentActivity);
         }
 
-        // Extract activity type and content
-        const [, type, content] = line.match(/^\*\*(.*?):\*\*(.*)$/);
-        currentActivity = {
-          type,
-          activity: content.trim(),
-          details: []
-        };
+        // Start new activity
+        const activityText = line.substring(1).trim();
+        
+        // Check if it starts with a type marker
+        if (activityText.startsWith('**')) {
+          const typeMatch = activityText.match(/^\*\*(.*?):\*\*(.*)/);
+          if (typeMatch) {
+            currentActivity = {
+              type: typeMatch[1],
+              activity: typeMatch[2].trim(),
+              details: []
+            };
+          }
+        } else {
+          currentActivity = {
+            activity: activityText,
+            details: []
+          };
+        }
       }
-      // Check for cost
+      // Handle cost lines
       else if (line.toLowerCase().startsWith('cost:')) {
         if (currentActivity) {
-          currentActivity.cost = line.replace('Cost:', '').trim();
+          currentActivity.cost = line.substring(5).trim();
         }
       }
-      // Check for address
-      else if (line.match(/^\*\*Address:\*\*/)) {
-        if (currentActivity) {
-          currentActivity.address = line.replace(/^\*\*Address:\*\*/, '').trim();
+      // Handle other metadata lines
+      else if (line.startsWith('**')) {
+        const metadataMatch = line.match(/^\*\*(.*?):\*\*(.*)/);
+        if (metadataMatch && currentActivity) {
+          const [, type, value] = metadataMatch;
+          const key = type.toLowerCase().replace(/\s+/g, '');
+          if (key === 'address') {
+            currentActivity.address = value.trim();
+          } else if (key === 'description') {
+            currentActivity.description = value.trim();
+          } else if (key === 'entryfee') {
+            currentActivity.entryFee = value.trim();
+          }
         }
       }
-      // Check for description
-      else if (line.match(/^\*\*Description:\*\*/)) {
-        if (currentActivity) {
-          currentActivity.description = line.replace(/^\*\*Description:\*\*/, '').trim();
-        }
-      }
-      // Check for entry fee
-      else if (line.match(/^\*\*Entry Fee:\*\*/)) {
-        if (currentActivity) {
-          currentActivity.entryFee = line.replace(/^\*\*Entry Fee:\*\*/, '').trim();
-        }
-      }
-      // Add as detail if none of the above
+      // Handle additional details
       else if (currentActivity && line.trim()) {
         currentActivity.details.push(line.trim());
       }
-    });
+    }
 
-    // Add the last activity
+    // Add the last activity if exists
     if (currentActivity) {
       dayPlan[currentSection].push(currentActivity);
     }
