@@ -8,9 +8,8 @@ const parseDayPlans = (rawText) => {
   if (!rawText) return [];
 
   const dayPlans = [];
-  const dayRegex = /Day (\d+): ([^\n]+)\(([^\n]+)\)/;
-  const timeRegex = /(\d{2}:\d{2} [AP]M)/;
-  const costRegex = /\(([^)]*SGD[^)]*)\)/;
+  const dayRegex = /Day (\d+): ([^\n]+)/;
+  const dateRegex = /\((.*?)\)/;
 
   // Split the text into day sections
   const dayTexts = rawText.split(/Day \d+:/).filter(text => text.trim());
@@ -21,8 +20,8 @@ const parseDayPlans = (rawText) => {
     
     // Extract day title and date
     const titleLine = lines[0];
-    const dateMatch = titleLine.match(/\((.*?)\)/);
-    const title = titleLine.replace(/\(.*?\)/, '').trim();
+    const dateMatch = titleLine.match(dateRegex);
+    const title = titleLine.replace(dateRegex, '').trim();
     const date = dateMatch ? dateMatch[1].trim() : '';
 
     const dayPlan = {
@@ -50,41 +49,50 @@ const parseDayPlans = (rawText) => {
         return;
       }
 
-      if (!currentSection || line.includes(':') && (line.toLowerCase().includes('morning:') || 
-          line.toLowerCase().includes('afternoon:') || line.toLowerCase().includes('evening:'))) {
-        return;
-      }
+      if (!currentSection) return;
 
-      // Extract activity details
-      const timeMatch = line.match(timeRegex);
-      const costMatch = line.match(costRegex);
-      
-      if (timeMatch || line.includes('Activity:') || line.includes('Lunch:') || 
-          line.includes('Dinner:') || line.includes('Breakfast:') || 
-          line.startsWith('Visit') || line.startsWith('Transfer') || 
-          line.startsWith('Check')) {
-        
+      // Check for activity markers
+      if (line.match(/^\*\*(.*?):\*\*/)) {
         // Save previous activity if exists
         if (currentActivity) {
           dayPlan[currentSection].push(currentActivity);
         }
 
-        // Create new activity
+        // Extract activity type and content
+        const [, type, content] = line.match(/^\*\*(.*?):\*\*(.*)$/);
         currentActivity = {
-          time: timeMatch ? timeMatch[1] : '',
-          activity: line.replace(timeRegex, '').replace(costRegex, '').trim(),
-          details: [],
-          cost: costMatch ? costMatch[1].trim() : ''
+          type,
+          activity: content.trim(),
+          details: []
         };
-      } else if (currentActivity) {
-        // If line contains cost information
-        if (line.toLowerCase().includes('cost:') || line.toLowerCase().includes('approx.') || 
-            line.toLowerCase().includes('sgd')) {
-          currentActivity.cost = line.trim();
-        } else {
-          // Add as detail
-          currentActivity.details.push(line);
+      }
+      // Check for cost
+      else if (line.toLowerCase().startsWith('cost:')) {
+        if (currentActivity) {
+          currentActivity.cost = line.replace('Cost:', '').trim();
         }
+      }
+      // Check for address
+      else if (line.match(/^\*\*Address:\*\*/)) {
+        if (currentActivity) {
+          currentActivity.address = line.replace(/^\*\*Address:\*\*/, '').trim();
+        }
+      }
+      // Check for description
+      else if (line.match(/^\*\*Description:\*\*/)) {
+        if (currentActivity) {
+          currentActivity.description = line.replace(/^\*\*Description:\*\*/, '').trim();
+        }
+      }
+      // Check for entry fee
+      else if (line.match(/^\*\*Entry Fee:\*\*/)) {
+        if (currentActivity) {
+          currentActivity.entryFee = line.replace(/^\*\*Entry Fee:\*\*/, '').trim();
+        }
+      }
+      // Add as detail if none of the above
+      else if (currentActivity && line.trim()) {
+        currentActivity.details.push(line.trim());
       }
     });
 
