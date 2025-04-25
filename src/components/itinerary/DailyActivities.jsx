@@ -3,10 +3,7 @@ import React from 'react';
 const DailyActivities = ({ dayPlan }) => {
   if (!dayPlan) return null;
 
-  // Parse the activities from the dayPlan text
   const parseActivities = (text) => {
-    if (!text) return { morning: [], afternoon: [], evening: [] };
-
     const activities = {
       morning: [],
       afternoon: [],
@@ -14,7 +11,7 @@ const DailyActivities = ({ dayPlan }) => {
     };
 
     let currentSection = null;
-    let currentActivity = {};
+    let currentActivity = null;
 
     const lines = text.split('\n').map(line => line.trim()).filter(line => line);
 
@@ -33,36 +30,32 @@ const DailyActivities = ({ dayPlan }) => {
 
       if (!currentSection) return;
 
-      // Parse time and activity
-      if (line.match(/^\d{2}:\d{2}/)) {
-        if (Object.keys(currentActivity).length > 0) {
+      // Parse activity lines
+      if (line.includes(':')) {
+        if (currentActivity) {
           activities[currentSection].push(currentActivity);
         }
-        const [time, ...activityParts] = line.split(' ');
+        const [title, ...descParts] = line.split(':');
         currentActivity = {
-          time,
-          activity: activityParts.join(' ')
+          title: title.trim(),
+          description: descParts.join(':').trim(),
+          details: []
         };
-      }
-      // Parse transportation
-      else if (line.toLowerCase().startsWith('transportation:')) {
-        currentActivity.transportation = line.split(':')[1].trim();
-      }
-      // Parse cost
-      else if (line.toLowerCase().includes('cost:')) {
-        currentActivity.cost = line.trim();
-      }
-      // Parse additional details
-      else if (currentActivity.activity) {
-        if (!currentActivity.details) {
-          currentActivity.details = [];
+      } else if (line.toLowerCase().startsWith('transport')) {
+        if (currentActivity) {
+          currentActivity.transport = line;
         }
+      } else if (line.toLowerCase().startsWith('duration')) {
+        if (currentActivity) {
+          currentActivity.duration = line;
+        }
+      } else if (currentActivity && line) {
         currentActivity.details.push(line);
       }
     });
 
     // Add the last activity
-    if (Object.keys(currentActivity).length > 0 && currentSection) {
+    if (currentActivity && currentSection) {
       activities[currentSection].push(currentActivity);
     }
 
@@ -72,8 +65,8 @@ const DailyActivities = ({ dayPlan }) => {
   const activities = parseActivities(dayPlan);
 
   const TimeBlock = ({ title, activities, icon }) => (
-    <div className="mb-6">
-      <div className="flex items-center mb-3">
+    <div className="mb-8">
+      <div className="flex items-center mb-4">
         <div className={`rounded-full p-2 mr-3 ${icon.bgColor}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${icon.textColor}`} viewBox="0 0 20 20" fill="currentColor">
             {icon.path}
@@ -81,48 +74,50 @@ const DailyActivities = ({ dayPlan }) => {
         </div>
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
       </div>
-      <div className="pl-10 space-y-4">
+      <div className="pl-12 space-y-4">
         {activities.map((item, index) => (
-          <div key={index} className="bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
+          <div key={index} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
             <div className="flex items-start justify-between">
-              <div className="font-medium text-gray-800">
-                {item.time && <span className="text-blue-600 mr-2">{item.time}</span>}
-                {item.activity}
+              <div>
+                <div className="font-medium text-gray-800">
+                  {item.title}
+                </div>
+                <div className="text-gray-600 mt-1">
+                  {item.description}
+                </div>
               </div>
             </div>
-            {item.transportation && (
+            {item.transport && (
               <div className="text-sm text-gray-600 mt-2">
-                <span className="font-medium">Transportation:</span> {item.transportation}
+                {item.transport}
               </div>
             )}
-            {item.cost && (
+            {item.duration && (
               <div className="text-sm text-gray-600 mt-1">
-                <span className="font-medium">Cost:</span> {item.cost}
+                {item.duration}
               </div>
             )}
-            {item.details && item.details.length > 0 && (
-              <div className="text-sm text-gray-600 mt-2">
-                {item.details.map((detail, i) => (
-                  <div key={i}>{detail}</div>
-                ))}
+            {item.details.map((detail, i) => (
+              <div key={i} className="text-sm text-gray-600 mt-1">
+                {detail}
               </div>
-            )}
+            ))}
           </div>
         ))}
       </div>
     </div>
   );
 
+  // Extract date if present
+  const dateMatch = dayPlan.match(/Day \d+: ([^\n]+)/);
+  const date = dateMatch ? dateMatch[1] : null;
+
   return (
     <div className="bg-gray-50 rounded-lg p-6">
-      {/* Date display */}
-      {dayPlan.includes('Date:') && (
-        <div className="mb-6 text-lg font-semibold text-gray-800">
-          {dayPlan.split('\n').find(line => line.includes('Date:')).trim()}
-        </div>
+      {date && (
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">{date}</h2>
       )}
 
-      {/* Morning Activities */}
       {activities.morning.length > 0 && (
         <TimeBlock
           title="Morning"
@@ -135,7 +130,6 @@ const DailyActivities = ({ dayPlan }) => {
         />
       )}
 
-      {/* Afternoon Activities */}
       {activities.afternoon.length > 0 && (
         <TimeBlock
           title="Afternoon"
@@ -148,7 +142,6 @@ const DailyActivities = ({ dayPlan }) => {
         />
       )}
 
-      {/* Evening Activities */}
       {activities.evening.length > 0 && (
         <TimeBlock
           title="Evening"
