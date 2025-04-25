@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import FlightCard from './FlightCard';
 import HotelCard from './HotelCard';
-import DailyPlan from './DailyPlan';
+import DailyActivities from './DailyActivities';
 import PointOfInterestCard from './PointOfInterestCard';
 
 const TabbedItinerary = ({
@@ -115,7 +115,7 @@ const TabbedItinerary = ({
 
             {/* Daily Plan Content */}
             {itinerary.daily_plan?.[activeDay - 1] ? (
-              <DailyPlan dayPlan={itinerary.daily_plan[activeDay - 1]} />
+              <DailyActivities dayPlan={itinerary.daily_plan[activeDay - 1]} />
             ) : (
               <div className="text-center text-gray-600">
                 No activities planned for this day.
