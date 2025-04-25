@@ -2,22 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { formatDate, formatCurrency } from '../../utils/formatters';
 
 const ItinerarySummary = ({ itinerary }) => {
-  // Return early if no itinerary is provided
-  if (!itinerary) {
-    return null;
-  }
-
   const [calculatedDuration, setCalculatedDuration] = useState(0);
 
   // Calculate duration based on start and end dates
   useEffect(() => {
-    if (itinerary.startDate && itinerary.endDate) {
+    if (itinerary?.startDate && itinerary?.endDate) {
       const start = new Date(itinerary.startDate);
       const end = new Date(itinerary.endDate);
       const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both days
       setCalculatedDuration(durationDays);
     }
-  }, [itinerary.startDate, itinerary.endDate]);
+  }, [itinerary?.startDate, itinerary?.endDate]);
+
+  // Return early if no itinerary is provided
+  if (!itinerary) {
+    return null;
+  }
 
   // Extract total cost from raw text
   const extractTotalCost = (rawText) => {
