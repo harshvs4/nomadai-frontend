@@ -3,74 +3,6 @@ import React from 'react';
 const DailyActivities = ({ dayPlan }) => {
   if (!dayPlan) return null;
 
-  // Parse the activities from the dayPlan text
-  const parseActivities = (text) => {
-    if (!text) return { morning: [], afternoon: [], evening: [] };
-
-    const activities = {
-      morning: [],
-      afternoon: [],
-      evening: []
-    };
-
-    let currentSection = null;
-    let currentActivity = {};
-
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-
-    lines.forEach(line => {
-      // Detect section headers
-      if (line.toLowerCase().includes('morning')) {
-        currentSection = 'morning';
-        return;
-      } else if (line.toLowerCase().includes('afternoon')) {
-        currentSection = 'afternoon';
-        return;
-      } else if (line.toLowerCase().includes('evening')) {
-        currentSection = 'evening';
-        return;
-      }
-
-      if (!currentSection) return;
-
-      // Parse time and activity
-      if (line.match(/^\d{2}:\d{2}/)) {
-        if (Object.keys(currentActivity).length > 0) {
-          activities[currentSection].push(currentActivity);
-        }
-        const [time, ...activityParts] = line.split(' ');
-        currentActivity = {
-          time,
-          activity: activityParts.join(' ')
-        };
-      }
-      // Parse transportation
-      else if (line.toLowerCase().startsWith('transportation:')) {
-        currentActivity.transportation = line.split(':')[1].trim();
-      }
-      // Parse cost
-      else if (line.toLowerCase().includes('cost:')) {
-        currentActivity.cost = line.trim();
-      }
-      // Parse additional details
-      else if (currentActivity.activity) {
-        if (!currentActivity.details) {
-          currentActivity.details = [];
-        }
-        currentActivity.details.push(line);
-      }
-    });
-
-    // Add the last activity
-    if (Object.keys(currentActivity).length > 0 && currentSection) {
-      activities[currentSection].push(currentActivity);
-    }
-
-    return activities;
-  };
-
-  const activities = parseActivities(dayPlan);
-
   const TimeBlock = ({ title, activities, icon }) => (
     <div className="mb-6">
       <div className="flex items-center mb-3">
@@ -90,20 +22,15 @@ const DailyActivities = ({ dayPlan }) => {
                 {item.activity}
               </div>
             </div>
-            {item.transportation && (
-              <div className="text-sm text-gray-600 mt-2">
-                <span className="font-medium">Transportation:</span> {item.transportation}
-              </div>
-            )}
             {item.cost && (
-              <div className="text-sm text-gray-600 mt-1">
+              <div className="text-sm text-gray-600 mt-2">
                 <span className="font-medium">Cost:</span> {item.cost}
               </div>
             )}
             {item.details && item.details.length > 0 && (
               <div className="text-sm text-gray-600 mt-2">
                 {item.details.map((detail, i) => (
-                  <div key={i}>{detail}</div>
+                  <div key={i} className="text-gray-500">{detail}</div>
                 ))}
               </div>
             )}
@@ -115,18 +42,19 @@ const DailyActivities = ({ dayPlan }) => {
 
   return (
     <div className="bg-gray-50 rounded-lg p-6">
-      {/* Date display */}
-      {dayPlan.includes('Date:') && (
-        <div className="mb-6 text-lg font-semibold text-gray-800">
-          {dayPlan.split('\n').find(line => line.includes('Date:')).trim()}
-        </div>
-      )}
+      {/* Day Title and Date */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">
+          Day {dayPlan.day}: {dayPlan.title}
+        </h2>
+        <p className="text-gray-600 mt-1">{dayPlan.date}</p>
+      </div>
 
       {/* Morning Activities */}
-      {activities.morning.length > 0 && (
+      {dayPlan.morning && dayPlan.morning.length > 0 && (
         <TimeBlock
           title="Morning"
-          activities={activities.morning}
+          activities={dayPlan.morning}
           icon={{
             bgColor: 'bg-yellow-100',
             textColor: 'text-yellow-600',
@@ -136,10 +64,10 @@ const DailyActivities = ({ dayPlan }) => {
       )}
 
       {/* Afternoon Activities */}
-      {activities.afternoon.length > 0 && (
+      {dayPlan.afternoon && dayPlan.afternoon.length > 0 && (
         <TimeBlock
           title="Afternoon"
-          activities={activities.afternoon}
+          activities={dayPlan.afternoon}
           icon={{
             bgColor: 'bg-blue-100',
             textColor: 'text-blue-600',
@@ -149,10 +77,10 @@ const DailyActivities = ({ dayPlan }) => {
       )}
 
       {/* Evening Activities */}
-      {activities.evening.length > 0 && (
+      {dayPlan.evening && dayPlan.evening.length > 0 && (
         <TimeBlock
           title="Evening"
-          activities={activities.evening}
+          activities={dayPlan.evening}
           icon={{
             bgColor: 'bg-indigo-100',
             textColor: 'text-indigo-600',

@@ -19,7 +19,7 @@ const TabbedItinerary = ({
   const [activeTab, setActiveTab] = useState('overview');
   const [activeDay, setActiveDay] = useState(1);
 
-  // Sample structured data for the day-by-day breakdown
+  // Structured data for the day-by-day breakdown
   const dayPlans = [
     {
       day: 1,
