@@ -30,27 +30,47 @@ const DailyActivities = ({ dayPlan }) => {
 
       if (!currentSection) return;
 
-      // Parse activity lines
-      if (line.includes(':')) {
+      // Start a new activity if it begins with a time or specific keywords
+      if (line.match(/^\d{2}:\d{2}/) || 
+          line.startsWith('Arrival') || 
+          line.startsWith('Transport') || 
+          line.startsWith('Check-in') ||
+          line.startsWith('Lunch:') ||
+          line.startsWith('Visit') ||
+          line.startsWith('Dinner:') ||
+          line.startsWith('Breakfast') ||
+          line.startsWith('Free Time:') ||
+          line.startsWith('Return') ||
+          line.startsWith('Flight')) {
+        
         if (currentActivity) {
           activities[currentSection].push(currentActivity);
         }
-        const [title, ...descParts] = line.split(':');
-        currentActivity = {
-          title: title.trim(),
-          description: descParts.join(':').trim(),
-          details: []
-        };
-      } else if (line.toLowerCase().startsWith('transport')) {
-        if (currentActivity) {
-          currentActivity.transport = line;
+        
+        currentActivity = { description: line };
+        
+        // Extract time if present
+        const timeMatch = line.match(/^\d{2}:\d{2}/);
+        if (timeMatch) {
+          currentActivity.time = timeMatch[0];
+          currentActivity.description = line.substring(timeMatch[0].length).trim();
         }
-      } else if (line.toLowerCase().startsWith('duration')) {
+        
+      } else if (line.toLowerCase().startsWith('transport:')) {
         if (currentActivity) {
-          currentActivity.duration = line;
+          currentActivity.transport = line.substring('transport:'.length).trim();
         }
-      } else if (currentActivity && line) {
-        currentActivity.details.push(line);
+      } else if (line.toLowerCase().startsWith('duration:')) {
+        if (currentActivity) {
+          currentActivity.duration = line.substring('duration:'.length).trim();
+        }
+      } else if (line.includes('approx.') || line.includes('SGD')) {
+        if (currentActivity) {
+          currentActivity.cost = line.trim();
+        }
+      } else if (currentActivity) {
+        // Append to description for additional details
+        currentActivity.description += ' ' + line;
       }
     });
 
@@ -74,50 +94,48 @@ const DailyActivities = ({ dayPlan }) => {
         </div>
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
       </div>
-      <div className="pl-12 space-y-4">
+      <div className="pl-10 space-y-4">
         {activities.map((item, index) => (
           <div key={index} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
             <div className="flex items-start justify-between">
-              <div>
+              <div className="space-y-2">
                 <div className="font-medium text-gray-800">
-                  {item.title}
-                </div>
-                <div className="text-gray-600 mt-1">
+                  {item.time && <span className="text-blue-600 mr-2">{item.time}</span>}
                   {item.description}
                 </div>
+                {item.transport && (
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">Transport:</span> {item.transport}
+                  </div>
+                )}
+                {item.duration && (
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">Duration:</span> {item.duration}
+                  </div>
+                )}
+                {item.cost && (
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">Cost:</span> {item.cost}
+                  </div>
+                )}
               </div>
             </div>
-            {item.transport && (
-              <div className="text-sm text-gray-600 mt-2">
-                {item.transport}
-              </div>
-            )}
-            {item.duration && (
-              <div className="text-sm text-gray-600 mt-1">
-                {item.duration}
-              </div>
-            )}
-            {item.details.map((detail, i) => (
-              <div key={i} className="text-sm text-gray-600 mt-1">
-                {detail}
-              </div>
-            ))}
           </div>
         ))}
       </div>
     </div>
   );
 
-  // Extract date if present
-  const dateMatch = dayPlan.match(/Day \d+: ([^\n]+)/);
-  const date = dateMatch ? dateMatch[1] : null;
-
   return (
     <div className="bg-gray-50 rounded-lg p-6">
-      {date && (
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">{date}</h2>
+      {/* Day Title */}
+      {dayPlan.split('\n')[0] && (
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">
+          {dayPlan.split('\n')[0]}
+        </h2>
       )}
 
+      {/* Morning Activities */}
       {activities.morning.length > 0 && (
         <TimeBlock
           title="Morning"
@@ -130,6 +148,7 @@ const DailyActivities = ({ dayPlan }) => {
         />
       )}
 
+      {/* Afternoon Activities */}
       {activities.afternoon.length > 0 && (
         <TimeBlock
           title="Afternoon"
@@ -142,6 +161,7 @@ const DailyActivities = ({ dayPlan }) => {
         />
       )}
 
+      {/* Evening Activities */}
       {activities.evening.length > 0 && (
         <TimeBlock
           title="Evening"
