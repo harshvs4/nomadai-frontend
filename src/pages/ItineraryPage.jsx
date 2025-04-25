@@ -43,7 +43,8 @@ const ItineraryPage = () => {
           setError(null);
           // Fetch the itinerary from the backend
           const response = await llmService.getItinerary(id);
-          console.log(response);
+          console.log('Full Itinerary Response:', response);
+          console.log('Raw Text Content:', response.raw_text);
           setItinerary(response);
         } catch (error) {
           console.error('Error fetching itinerary:', error);
