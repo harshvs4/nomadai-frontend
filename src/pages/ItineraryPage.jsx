@@ -3,10 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTravelContext } from '../context/TravelContext';
 import ItinerarySummary from '../components/itinerary/ItinerarySummary';
 import ItineraryMarkdown from '../components/itinerary/ItineraryMarkdown';
-import DailyPlan from '../components/itinerary/DailyPlan';
-import FlightCard from '../components/itinerary/FlightCard';
-import HotelCard from '../components/itinerary/HotelCard';
-import PointOfInterestCard from '../components/itinerary/PointOfInterestCard';
+import TabbedItinerary from '../components/itinerary/TabbedItinerary';
 import ChatWindow from '../components/chat/ChatWindow';
 import Loader from '../components/common/Loader';
 import Button from '../components/common/Button';
@@ -290,104 +287,24 @@ const ItineraryPage = () => {
           />
         )}
 
-        {/* Full Itinerary Details */}
+        {/* Raw Text Content (if needed) */}
         {itinerary.raw_text && (
           <ItineraryMarkdown content={itinerary.raw_text} />
         )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Flight Information */}
-          <div className="md:col-span-1">
-            <h2 className="text-xl font-semibold mb-4">Flight</h2>
-            {selectedFlight ? (
-              <FlightCard 
-                flight={selectedFlight}
-                availableFlights={availableFlights}
-                onFlightChange={handleFlightChange}
-                isUpdating={isUpdating}
-                onLoadMore={loadMoreFlights}
-              />
-            ) : (
-              <div className="p-4 bg-white rounded-lg shadow text-gray-600">
-                <p className="text-center">No flight information available</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Accommodation Information */}
-          <div className="md:col-span-2">
-            <h2 className="text-xl font-semibold mb-4">Accommodation</h2>
-            {selectedHotel ? (
-              <HotelCard 
-                hotel={selectedHotel}
-                availableHotels={availableHotels}
-                onHotelChange={handleHotelChange}
-                isUpdating={isUpdating}
-                onLoadMore={loadMoreHotels}
-              />
-            ) : (
-              <div className="p-4 bg-white rounded-lg shadow text-gray-600">
-                <p className="text-center">No accommodation information available</p>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Day Navigation */}
-        {totalDays > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-6 overflow-x-auto">
-            <div className="flex space-x-2">
-              {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => (
-                <button
-                  key={day}
-                  onClick={() => setActiveDay(day)}
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    safeActiveDay === day
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                  }`}
-                >
-                  Day {day}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Daily Plan */}
-        {totalDays > 0 && safeActiveDay <= totalDays ? (
-          <DailyPlan dayPlan={dailyPlan[safeActiveDay - 1]} />
-        ) : (
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <p className="text-gray-600">No activities planned yet.</p>
-          </div>
-        )}
-        
-        {/* Points of Interest */}
-        {pointsOfInterest.length > 0 && (
-          <div className="mt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                Popular Attractions in {itinerary.travel_request?.destination || 'Your Destination'}
-              </h2>
-              {pointsOfInterest.length > 6 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={loadMorePOIs}
-                  disabled={isUpdating}
-                >
-                  Load More
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pointsOfInterest.slice(0, 6).map((poi, index) => (
-                <PointOfInterestCard key={index} pointOfInterest={poi} />
-              ))}
-            </div>
-          </div>
-        )}
+
+        {/* Tabbed Interface */}
+        <TabbedItinerary
+          itinerary={itinerary}
+          selectedFlight={selectedFlight}
+          selectedHotel={selectedHotel}
+          availableFlights={availableFlights}
+          availableHotels={availableHotels}
+          onFlightChange={handleFlightChange}
+          onHotelChange={handleHotelChange}
+          onLoadMoreFlights={loadMoreFlights}
+          onLoadMoreHotels={loadMoreHotels}
+          isUpdating={isUpdating}
+        />
       </div>
       
       {/* Chat Widget */}
