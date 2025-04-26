@@ -12,6 +12,14 @@ const ItinerarySummary = ({
 }) => {
   const utilization = budget > 0 ? (totalCost / budget) * 100 : 0;
   
+  // Choose bar color based on utilization
+  let barColor = 'bg-green-500';
+  if (utilization > 90) {
+    barColor = 'bg-red-500';
+  } else if (utilization > 60) {
+    barColor = 'bg-yellow-400';
+  }
+
   const formatSGD = (amount) => {
     return `SGD ${amount.toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
@@ -51,10 +59,10 @@ const ItinerarySummary = ({
 
             <div className="relative w-full h-1.5 bg-gray-100">
               <div
-                className="absolute left-0 top-0 h-full bg-red-500 transition-all duration-500 ease-in-out"
+                className={`absolute left-0 top-0 h-full ${barColor} transition-all duration-500 ease-in-out`}
                 style={{ 
                   width: `${Math.min(utilization, 100)}%`,
-                  transform: 'translateZ(0)' // Force GPU acceleration for smoother transitions
+                  transform: 'translateZ(0)'
                 }}
               ></div>
             </div>

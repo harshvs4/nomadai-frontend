@@ -3,8 +3,6 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { useTravelContext } from '../../context/TravelContext';
 import llmService from '../../services/llm';
-import amadeusService from '../../services/amadeus';
-import googlePlacesService from '../../services/googlePlaces';
 
 const ChatWindow = ({ isOpen, onToggle, itineraryId }) => {
   const { chatMessages, addChatMessage, setItinerary } = useTravelContext();
