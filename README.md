@@ -103,6 +103,14 @@ nomadai-frontend/
 - **FlightCard**: Display flight information
 - **DailyPlan**: Detailed daily schedule view
 
+## Team
+
+- Gudur Venkata Rajeshwari (A0297977W)
+- Harsh Sharma (A0295906N)
+- Shivika Mathur (A0298106Y)
+- Soumya Haridas (A0296635N)
+- Vijit Daroch (A0296998R)
+
 ## API Integration
 
 The application integrates with several APIs:
